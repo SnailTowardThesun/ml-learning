@@ -43,7 +43,6 @@ def generate_pnet_data():
     images_path = '/Users/hankun/github/ml-learning/src/mtcnn/source/WIDER_train/images'
 
     image_dic = parse_wider_recorder_file(recorder_path, images_path)
-    image_dic = image_dic[:200]
 
     num = len(image_dic)
     print "%d pics in total" % num
@@ -52,7 +51,14 @@ def generate_pnet_data():
     d_idx = 0  # dont care
     idx = 0
     box_idx = 0
+
+    loop = 0
     for im_path, annotations in image_dic.iteritems():
+        # get only 200 pictures for demo because of poor cpu
+        loop += 1
+        if loop > 200:
+            break
+
         annotation = []
         for item in annotations:
             tmp = item.split(' ')

@@ -2,38 +2,27 @@
 do pnet train
 """
 import tensorflow as tf
-import numpy as np
 
 
-def keras_demo():
-    """basic way to use tensorflow.keras
-    """
+def pnet_train():
+    print ('do pnet train')
+    input = tf.keras.layers.Input(shape=[12, 12, 3])
+    x = tf.keras.layers.Conv2D(10, (3, 3), strides=1, padding='valid', name='conv1')(input)
+    x = tf.keras.layers.PReLU(shared_axes=[1, 2], name='prelu1')(x)
+    x = tf.keras.layers.MaxPool2D(pool_size=2)(x)
+    x = tf.keras.lyaers.Conv2D(16, (3, 3), strides=1, padding='valid', name='conv2')(x)
+    x = tf.keras.layers.PReLU(shared_axes=[1, 2], name='prelu2')(x)
+    x = tf.keras.layers.Conv2D(32, (3, 3), strides=1, padding='valid', name='conv3')(x)
+    x = tf.keras.lyaers.PReLU(shared_axes=[1, 2], name='prelu3')(x)
 
-    """create network
-    model = tf.keras.Sequential(
-        tf.keras.Dense(32, input_shape=(784,)),
-        tf.kears.Activation('relu'),
-    )
-    """
-
-    # we can also create network with .add
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(32, activation='relu', input_dim=100))
-    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
-    model.compile(optimizer='rmsprop',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
-
-    # do train
-    data = np.random.random((1000, 100))
-    labels = np.random.randint(2, size=(1000, 1))
-
-    # Train the model, iterating on the data in batches of 32 samples
-    model.fit(data, labels, epochs=10, batch_size=32)
+    classifier = tf.keras.layers.Conv2D(2, (1, 1), activation='softmax', name='classifier1')(x)
+    classifier = tf.keras.layers.Reshape((2,))(classifier)
+    bbox_regress = tf.keras.layers.Conv2D(4, (1, 1), name='bbox1')(x)
+    bbox_regress = tf.keras.layers.Reshape((4,))(bbox_regress)
 
 
 if __name__ == '__main__':
     """test for tensorflow.keras
     """
     print('tf version: %s, keras version: %s' % (tf.__version__, tf.keras.__version__))
-    keras_demo()
+    pnet_train()
