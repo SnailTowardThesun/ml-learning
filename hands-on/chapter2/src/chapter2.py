@@ -17,6 +17,12 @@ import urllib.request
 import pandas as pd
 import numpy as np
 
+import hashlib
+
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.preprocessing import Imputer
+
 
 def fetch_housing_data(housing_path, housing_url):
     """
@@ -89,5 +95,47 @@ if __name__ == '__main__':
     housing_data.info()
 
     # get train and test data
-    train_set, test_set = split_train_test(housing_data, 0.2)
+    # def test_set_check(identifier, test_ratio, hash):
+    #     return hash(np.int64(identifier)).digest()[-1] < 256 * test_ratio
+
+    # def split_train_test_by_id(data, test_ratio, id_column, hash=hashlib.md5):
+    #     ids = data[id_column]
+    #     in_test_set = ids.apply(lambda id_: test_set_check(id_, test_ratio, hash))
+    #     return data.loc[~in_test_set], data.loc[in_test_set]
+
+    # housing_data_with_id = housing_data.reset_index()
+    # train_set, test_set = split_train_test(housing_data_with_id, 0.2)
+
+    # housing_data_with_id["id"] = housing_data["longitude"] * 1000 + housing_data["latitude"]
+    # train_set, test_set = split_train_test_by_id(housing_data_with_id, 0.2, "id")
+
+    train_set, test_set = train_test_split(housing_data, test_size=0.2, random_state=42)
     logging.info('%d train + %d test' % (len(train_set), len(test_set)))
+
+
+    housing_data["income_cat"] = np.ceil(housing_data["median_income"] / 1.5)
+    housing_data["income_cat"].where(housing_data["income_cat"] < 5, 5.0, inplace=True)
+
+    split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    for train_index, test_index in split.split(housing_data, housing_data["income_cat"]):
+        strat_train_set = housing_data.loc[train_index]
+        strat_test_set = housing_data.loc[test_index]
+
+    logging.info(housing_data["income_cat"].value_counts() / len(housing_data))
+
+    for set in (strat_train_set, strat_test_set): 
+        set.drop(["income_cat"], axis=1, inplace=True)
+
+    # Discover and Visualize the Data to Gain Insights
+    # pass
+
+    # Prepare the Data for Machine Learning Algorithms
+    housing = strat_train_set.drop("median_house_value", axis=1)
+    housing_labels = strat_train_set["median_house_value"].copy()
+
+    ## Data cleaning
+    imputer = Imputer(strategy="median")
+    housing_num = housing.drop("ocean_proximity", axis=1)
+    imputer.fit(housing_num)
+    X = imputer.transform(housing_num)
+    housing_tr = pd.DataFrame(X, columns=housing_num.columns)
